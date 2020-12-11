@@ -17,12 +17,13 @@ export interface Photo {
   webviewPath?: string;
 }
 
-// variables for Capacitor Storage API
 const PHOTO_STORAGE = "photos";
-const { get, set } = useStorage();
 
 // custom hook that our other components will use
 export function usePhotoGallery() {
+  // variables for Capacitor Storage API
+
+  const { get, set } = useStorage();
   // function variables
   const { getPhoto } = useCamera();
   const [photos, setPhotos] = useState<Photo[]>([]);
@@ -74,7 +75,7 @@ export function usePhotoGallery() {
     const fileName = new Date().getTime() + ".jpeg";
     const savedFileImage = await savePicture(cameraPhoto, fileName);
     const newPhotos = [savedFileImage, ...photos];
-    // setPhotos(newPhotos);
+    setPhotos(newPhotos);
     set(PHOTO_STORAGE, JSON.stringify(newPhotos));
   };
 
