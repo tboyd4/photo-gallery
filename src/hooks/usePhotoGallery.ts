@@ -11,16 +11,39 @@ import {
   FilesystemDirectory,
 } from "@capacitor/core";
 
+// interface for photos. All should look like this
 export interface Photo {
   filepath: string;
   webviewPath?: string;
 }
 
+// variables for Capacitor Storage API
+const PHOTO_STORAGE = "photos";
+const { get, set } = useStorage();
+
+// custom hook that our other components will use
 export function usePhotoGallery() {
   // function variables
   const { getPhoto } = useCamera();
   const [photos, setPhotos] = useState<Photo[]>([]);
   const { deleteFile, getUri, readFile, writeFile } = useFilesystem();
+
+  // useEffect hook to load saved photos when custom hook is used
+  useEffect(() => {
+    const loadSaved = async () => {
+      const photosString = await get(PHOTO_STORAGE);
+      const photos = (photosString ? JSON.parse(photosString) : []) as Photo[];
+      for (let photo of photos) {
+        const file = await readFile({
+          path: photo.filepath,
+          directory: FilesystemDirectory.Data,
+        });
+        photo.webviewPath = `data:image/jpeg;base64,${file.data}`;
+      }
+      setPhotos(photos);
+    };
+    loadSaved();
+  }, [get, readFile]);
 
   // save/write picture to local filesystem
   const savePicture = async (
@@ -51,7 +74,8 @@ export function usePhotoGallery() {
     const fileName = new Date().getTime() + ".jpeg";
     const savedFileImage = await savePicture(cameraPhoto, fileName);
     const newPhotos = [savedFileImage, ...photos];
-    setPhotos(newPhotos);
+    // setPhotos(newPhotos);
+    set(PHOTO_STORAGE, JSON.stringify(newPhotos));
   };
 
   // return statement
