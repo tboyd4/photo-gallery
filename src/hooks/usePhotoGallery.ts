@@ -17,10 +17,30 @@ export interface Photo {
 }
 
 export function usePhotoGallery() {
+  // function variables
   const { getPhoto } = useCamera();
-
   const [photos, setPhotos] = useState<Photo[]>([]);
+  const { deleteFile, getUri, readFile, writeFile } = useFilesystem();
 
+  // save/write picture to local filesystem
+  const savePicture = async (
+    photo: CameraPhoto,
+    fileName: string
+  ): Promise<Photo> => {
+    const base64Data = await base64FromPath(photo.webPath!);
+    const savedFile = await writeFile({
+      path: fileName,
+      data: base64Data,
+      directory: FilesystemDirectory.Data,
+    });
+
+    return {
+      filepath: fileName,
+      webviewPath: photo.webPath,
+    };
+  };
+
+  // take a photo
   const takePhoto = async () => {
     const cameraPhoto = await getPhoto({
       resultType: CameraResultType.Uri,
@@ -29,16 +49,12 @@ export function usePhotoGallery() {
     });
 
     const fileName = new Date().getTime() + ".jpeg";
-    const newPhotos = [
-      {
-        filepath: fileName,
-        webviewPath: cameraPhoto.webPath,
-      },
-      ...photos,
-    ];
+    const savedFileImage = await savePicture(cameraPhoto, fileName);
+    const newPhotos = [savedFileImage, ...photos];
     setPhotos(newPhotos);
   };
 
+  // return statement
   return {
     photos,
     takePhoto,
